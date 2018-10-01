@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+"""
+Helper functions for ocr project
+"""
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+
+def implt(img, cmp=None, t=''):
+    """ Show image using plt """
+    plt.imshow(img, cmap=cmp)
+    plt.title(t)
+    # plt.show()
+    # cv2.imshow(t, img)
+
+
+def resize(img, height, always=True):
+    """ Resize image to given height """
+    if (img.shape[0] > height or always):
+        rate = height / img.shape[0]
+        return cv2.resize(img, (int(rate * img.shape[1]), height))
+
+    return img
+
+
+def ratio(img, height):
+    """ Getting scale ratio """
+    return img.shape[0] / height
+
+
+def extendImg(img, shape):
+    """ Extend 2D image (numpy array) in vertical and horizontal direction
+    Shape of result image will match 'shape'
+    Args:
+        img: image to be extended
+        shape: shape (touple) of result image
+    Returns:
+        Extended image
+    """
+    x = np.zeros(shape, np.uint8)
+    x[:img.shape[0], :img.shape[1]] = img
+    return x
