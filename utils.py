@@ -47,7 +47,6 @@ def label_encoder(y, alphabet=alphabet):
 import itertools
 def ctc_decoder(pred):
     out_best = list(np.argmax(pred[0, 2:], axis=1))
-    print(len(out_best))
     out_best = [k for k, g in itertools.groupby(out_best)]  # remove overlap value
     text = ''
     for i in out_best:

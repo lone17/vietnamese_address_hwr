@@ -11,6 +11,12 @@ def predict(img_dir, weights_dir):
     X = np.array(X)
     pred = model.predict(X, batch_size=1)
 
-    print(ctc_decoder(pred))
+    return ctc_decoder(pred)
 
-predict('0916_Data Samples 2/0000_samples.png', 'checkpoints/weights-01-182.39')
+dir = '0825_DataSamples 1'
+f = open(os.path.join(dir, 'labels.json'), encoding='utf-8')
+files = json.load(f).keys()
+f.close()
+for img in files:
+	pred = predict(os.path.join(dir, img), 'checkpoints/weights-24-72.64')
+	print(img, '= \'' + pred + '\'')
