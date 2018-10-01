@@ -46,7 +46,7 @@ def crnn(training=True):
     x = Convolution2D(16, (5,5), padding="same")(inp)
     x = BatchNormalization()(x)
     x = Activation("elu")(x)
-    x = MaxPool2D((3,3))(x)
+    x = MaxPool2D((3,2))(x)
 
     # x = Convolution2D(32, (5,5), padding="same")(x)
     # x = BatchNormalization()(x)
@@ -110,5 +110,5 @@ def crnn(training=True):
     return model
 
 desample_factor = 3*2*2*2
-model = crnn()
-print(model.summary())
+# model = crnn()
+# print(model.summary())

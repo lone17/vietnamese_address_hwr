@@ -3,9 +3,8 @@ from models import *
 
 cb_list = []
 
-# tb = TensorBoard(log_dir='/logs', write_graph=True, write_images=True,
-#                  write_grads=True, histogram_freq=1)
-# cb_list.append(tb)
+tb = TensorBoard(log_dir='/logs', write_graph=True, write_images=True)
+cb_list.append(tb)
 
 es = EarlyStopping(monitor='loss', patience=4, mode='min', verbose=1)
 cb_list.append(es)
