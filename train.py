@@ -14,12 +14,14 @@ cp = ModelCheckpoint(filepath='checkpoints/weights-{epoch:02d}-{val_loss:.2f}',
 cb_list.append(cp)
 
 model = crnn()
-gen = DataGenerator('X_2s', 'y_2', 2*2*2*3)
-model.fit_generator(generator=gen.next_train(),
-                    steps_per_epoch=gen.train_size,
-                    validation_data=gen.next_val(),
-                    validation_steps=gen.val_size,
-                    epochs=30,
-                    callbacks=cb_list,
-                    verbose=1,
-                    )
+gen = DataGenerator('X_2s', 'y_2', desample_factor)
+import tensorflow as tf
+with tf.device('/gpu:0'):
+    model.fit_generator(generator=gen.next_train(),
+                        steps_per_epoch=gen.train_size,
+                        validation_data=gen.next_val(),
+                        validation_steps=gen.val_size,
+                        epochs=30,
+                        callbacks=cb_list,
+                        verbose=1,
+                        )
