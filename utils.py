@@ -34,6 +34,7 @@ alphabet = [' ', ',', '.', '/', '+', '-', '#', "'", '(', ')', ':',
             'ừ', 'ứ', 'ử', 'ữ', 'ự',
             'ỳ', 'ý', 'ỷ', 'ỹ', 'ỵ',]
 idx = {alphabet[i]: i for i in range(len(alphabet))}
+blank_idx = len(alphabet)
 
 X = ['zxc', 'xcb', 'zxcb', 'z', 'bc']
 
@@ -55,23 +56,28 @@ def ctc_decoder(pred):
     return text
 
 from sklearn.externals import joblib
+from keras.preprocessing.sequence import pad_sequences
 import json
+text_len = 69
 def make_y_from_json(json_file, out):
     with open(json_file, encoding='utf-8') as f:
         y = json.load(f).values()
         y = label_encoder(y)
-
+        y = pad_sequences(y, padding='post', value=blank_idx)
         joblib.dump(y, out)
 
 import os
 import cv2
 from helpers import resize
+img_w = 2203
+img_h = 120
 def preprocess(img_dir):
     img = cv2.imread(img_dir, 1)
-    img = resize(img, 120, always=True)
+    img = resize(img, img_h, always=True)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                 cv2.THRESH_BINARY_INV, 71, 17)
+    img = cv2.copyMakeBorder(img, 0, 0, 0, img_w - img.shape[1], cv2.BORDER_CONSTANT, value=0)
 
     return img.swapaxes(0,1)[:,:,None] / 255 * 2 - 1
 
@@ -80,38 +86,48 @@ def make_X_from_images(dir, out):
     files = json.load(f).keys()
     f.close()
 
-    X = []
-    for img in files:
-        X.append(preprocess(os.path.join(dir, img)))
+    X = np.zeros((len(files), img_w, img_h))
+    for i in range(len(files)):
+        X[i] = preprocess(os.path.join(dir, files[i]))
+    X = np.array(X)
 
-    joblib.dump(X, out)
+    np.save(out, X)
 
 # make_y_from_json('0916_Data Samples 2/labels.json', 'y_2')
 # y = joblib.load('y_2')
 # print(type(y[0]))
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
+import math
 class DataGenerator:
 
-    def __init__(self, X_file, y_file, desample_factor, val_size=0.2):
-        X = joblib.load(X_file)
-        y = joblib.load(y_file)
+    def __init__(self, X_file, y_file, desample_factor, batch_size=32, val_size=0.2):
+        X = np.load(X_file + '.npy')
+        y = np.load(y_file + '.npy')
+
+        self.input_length = X.shape[1] // desample_factor - 2
+        self.label_length = y.shape[1]
 
         self.X_train, self.X_val, self.y_train, self.y_val = \
         train_test_split(X, y, test_size=val_size, shuffle=True)
 
-        self.desample_factor = desample_factor
+        # self.desample_factor = desample_factor
+        self.batch_size = batch_size
         self.train_size = len(self.X_train)
         self.val_size = len(self.X_val)
+        self.train_steps = math.ceil(self.train_size / batch_size)
+        self.val_steps = math.ceil(self.val_size / batch_size)
 
     def next_train(self):
         while True:
-            for i in range(self.train_size):
-                X = np.array(self.X_train[i:i+1])
-                y = np.array(self.y_train[i:i+1])
+            for i in range(0, self.train_size, self.batch_size):
+                X = np.array(self.X_train[i : i+self.batch_size])
+                y = np.array(self.y_train[i : i+self.batch_size])
 
-                input_length = np.ones([1, 1]) * (X.shape[1] // self.desample_factor - 2)
-                label_length = np.ones([1, 1]) * len(y[0])
+                batch_size = len(X)
+
+                input_length = np.ones([batch_size, 1]) * self.input_length
+                label_length = np.array([sum(label != -1) for label in y])[:None]
 
                 inputs = {
                     'input': X,
@@ -120,18 +136,20 @@ class DataGenerator:
                     'label_length': label_length,
                     }
 
-                outputs = {'ctc': np.zeros([1])}
+                outputs = {'ctc': np.zeros([batch_size])}
 
                 yield (inputs, outputs)
 
     def next_val(self):
         while True:
-            for i in range(self.val_size):
-                X = np.array(self.X_val[i:i+1])
-                y = np.array(self.y_val[i:i+1])
+            for i in range(0, self.val_size, self.batch_size):
+                X = np.array(self.X_val[i : i+self.batch_size])
+                y = np.array(self.y_val[i : i+self.batch_size])
 
-                input_length = np.ones([1, 1]) * (X.shape[1] // self.desample_factor - 2)
-                label_length = np.ones([1, 1]) * len(y[0])
+                batch_size = len(X)
+
+                input_length = np.ones([batch_size, 1]) * self.input_length
+                label_length = np.array([sum(label != -1) for label in y])[:None]
 
                 inputs = {
                     'input': X,
@@ -140,6 +158,6 @@ class DataGenerator:
                     'label_length': label_length,
                     }
 
-                outputs = {'ctc': np.zeros([1])}
+                outputs = {'ctc': np.zeros([batch_size])}
 
                 yield (inputs, outputs)
