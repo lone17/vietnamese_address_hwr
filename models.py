@@ -164,7 +164,7 @@ def model2(training=True):
 
     return model
 
-def crnn(training=True):
+def model3(training=True):
     inp = Input(shape=(None,img_h,1), name='input')
 
     x = Convolution2D(16, (5,5), padding="same")(inp)
@@ -211,6 +211,76 @@ def crnn(training=True):
     x = Reshape((-1, 7*128))(x)
 
     x = TimeDistributed(Dense(512, activation='relu'))(x)
+    x = Bidirectional(LSTM(256, return_sequences=True, activation='tanh'), merge_mode='sum')(x)
+    x = Bidirectional(LSTM(256, return_sequences=True, activation='tanh'), merge_mode='concat')(x)
+    x = Dropout(0.2)(x)
+    pred = TimeDistributed(Dense(len(alphabet) + 1, activation='softmax'))(x)
+
+    labels = Input(shape=(None,), dtype='int32', name='labels')
+    input_length = Input(name='input_length', shape=[1], dtype='int32')
+    label_length = Input(name='label_length', shape=[1], dtype='int32')
+
+    loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([pred,
+                                                                       labels,
+                                                                       input_length,
+                                                                       label_length])
+
+    if training:
+        model = Model([inp, labels, input_length, label_length], loss_out)
+        opt = optimizers.Nadam(0.001)
+        model.compile(optimizer=opt, loss=ctc)
+    else:
+        model = Model(inp, pred)
+
+    return model
+
+def crnn(training=True):
+    inp = Input(shape=(None,img_h,1), name='input')
+
+    x = Convolution2D(16, (10,10), padding="same")(inp)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = Convolution2D(16, (10,10), padding="same")(inp)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = MaxPool2D((2,2))(x)
+
+    x = Convolution2D(32, (10,10), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = Convolution2D(32, (10,10), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = MaxPool2D((2,2))(x)
+    x = Dropout(0.2)(x)
+
+    x = Convolution2D(64, (5,5), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = Convolution2D(64, (5,5), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = Convolution2D(64, (5,5), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = MaxPool2D((2,2), strides=(2,2))(x)
+    x = Dropout(0.2)(x)
+
+    x = Convolution2D(128, (5,5), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = Convolution2D(128, (5,5), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = Convolution2D(128, (5,5), padding="same")(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    x = MaxPool2D((2,2))(x)
+    x = Dropout(0.2)(x)
+
+    x = Reshape((-1, 7*128))(x)
+
+    x = TimeDistributed(Dense(512, activation='relu'))(x)
     # x = Dropout(0.2)(x)
     # x = LSTM(256, return_sequences=True, activation='tanh')(x)
     # x = LSTM(128, return_sequences=True, activation='tanh')(x)
@@ -244,8 +314,9 @@ models = {
     'model0': model0,
     'model1': model1,
     'model2': model2,
+    'model3': model3,
     'crnn': crnn,
 }
 
-# model = crnn()
-# print(model.summary())
+model = crnn()
+print(model.summary())
