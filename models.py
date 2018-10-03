@@ -211,15 +211,15 @@ def crnn(training=True):
     x = Reshape((-1, 7*128))(x)
 
     x = TimeDistributed(Dense(512, activation='relu'))(x)
-    x = Dropout(0.2)(x)
+    # x = Dropout(0.2)(x)
     # x = LSTM(256, return_sequences=True, activation='tanh')(x)
     # x = LSTM(128, return_sequences=True, activation='tanh')(x)
     x = Bidirectional(LSTM(256, return_sequences=True, activation='tanh'), merge_mode='sum')(x)
-    x = Dropout(0.2)(x)
+    # x = Dropout(0.2)(x)
     x = Bidirectional(LSTM(256, return_sequences=True, activation='tanh'), merge_mode='concat')(x)
     x = Dropout(0.2)(x)
-    x = TimeDistributed(Dense(256, activation='relu'))(x)
-    x = Dropout(0.2)(x)
+    # x = TimeDistributed(Dense(256, activation='relu'))(x)
+    # x = Dropout(0.2)(x)
     pred = TimeDistributed(Dense(len(alphabet) + 1, activation='softmax'))(x)
 
     labels = Input(shape=(None,), dtype='int32', name='labels')
@@ -233,7 +233,7 @@ def crnn(training=True):
 
     if training:
         model = Model([inp, labels, input_length, label_length], loss_out)
-        opt = optimizers.Nadam(0.01)
+        opt = optimizers.Nadam(0.001)
         model.compile(optimizer=opt, loss=ctc)
     else:
         model = Model(inp, pred)
@@ -247,5 +247,5 @@ models = {
     'crnn': crnn,
 }
 
-model = crnn()
-print(model.summary())
+# model = crnn()
+# print(model.summary())
