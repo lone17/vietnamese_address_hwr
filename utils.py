@@ -40,8 +40,9 @@ desample_factor = {
     'model0': 3*2*2*2,
     'model1': 3*2*2*2,
     'model2': 3*2*2*2,
-    'model2': 3*2*2*2,
-    'crnn': 2*2*2*2,
+    'model3': 3*2*2*2,
+    'model4': 2*2*2*2,
+    'crnn': 2*2*2*1,
 }
 
 def string_vectorizer(str, alphabet):
