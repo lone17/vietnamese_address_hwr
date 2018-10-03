@@ -339,10 +339,10 @@ def crnn(training=True):
     x = Convolution2D(128, (5,11), padding="same")(x)
     x = BatchNormalization()(x)
     x = Activation("elu")(x)
-    x = MaxPool2D((2,1))(x)
+    x = MaxPool2D((1,2))(x)
     x = Dropout(0.5)(x)
 
-    x = Reshape((-1, 15*128))(x)
+    x = Reshape((-1, 7*128))(x)
 
     x = TimeDistributed(Dense(512, activation='elu'))(x)
     # x = Dropout(0.2)(x)
@@ -383,5 +383,5 @@ models = {
     'crnn': crnn,
 }
 
-# model = crnn()
-# print(model.summary())
+model = crnn()
+print(model.summary())
