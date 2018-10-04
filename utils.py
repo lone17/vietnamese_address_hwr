@@ -42,6 +42,7 @@ desample_factor = {
     'model2': 3*2*2*2,
     'model3': 3*2*2*2,
     'model4': 2*2*2*2,
+    'model5': 2*2*2*1,
     'crnn': 2*2*2*1,
 }
 
